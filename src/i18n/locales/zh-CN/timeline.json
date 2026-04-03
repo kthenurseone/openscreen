@@ -38,6 +38,7 @@
 		"noDwellMomentsDescription": "请尝试在重要操作上进行较慢光标停留的录制。",
 		"noAutoZoomSlots": "无可用的自动缩放位置",
 		"noAutoZoomSlotsDescription": "检测到的停留点与现有缩放区域重叠。",
+		"zoomCandidatesDescription": "在预览中点击每个高亮区域上的 ✓ 来添加缩放区域。",
 		"cannotPlaceTrim": "无法在此处放置剪辑",
 		"trimExistsAtLocation": "此位置已存在剪辑或没有足够的空间。",
 		"cannotPlaceSpeed": "无法在此处放置速度",

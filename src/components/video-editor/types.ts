@@ -25,6 +25,13 @@ export interface ZoomRegion {
 	focus: ZoomFocus;
 }
 
+export interface ZoomCandidate {
+	id: string;
+	startMs: number;
+	endMs: number;
+	focus: ZoomFocus;
+}
+
 export interface CursorTelemetryPoint {
 	timeMs: number;
 	cx: number;

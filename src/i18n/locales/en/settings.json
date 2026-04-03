@@ -33,6 +33,8 @@
 		"image": "Image",
 		"color": "Color",
 		"gradient": "Gradient",
+		"screen": "Screen",
+		"screenDescription": "Use your recorded screen as the background",
 		"uploadCustom": "Upload Custom",
 		"gradientLabel": "Gradient {{index}}"
 	},

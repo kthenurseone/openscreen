@@ -33,9 +33,11 @@ import {
 import { AnnotationOverlay } from "./AnnotationOverlay";
 import {
 	type AnnotationRegion,
+	DEFAULT_ZOOM_DEPTH,
 	type SpeedRegion,
 	type TrimRegion,
 	ZOOM_DEPTH_SCALES,
+	type ZoomCandidate,
 	type ZoomDepth,
 	type ZoomFocus,
 	type ZoomRegion,
@@ -93,6 +95,9 @@ interface VideoPlaybackProps {
 	onSelectAnnotation?: (id: string | null) => void;
 	onAnnotationPositionChange?: (id: string, position: { x: number; y: number }) => void;
 	onAnnotationSizeChange?: (id: string, size: { width: number; height: number }) => void;
+	pendingZoomCandidates?: ZoomCandidate[];
+	onAcceptZoomCandidate?: (id: string) => void;
+	onRejectZoomCandidate?: (id: string) => void;
 }
 
 export interface VideoPlaybackRef {
@@ -141,11 +146,15 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			onSelectAnnotation,
 			onAnnotationPositionChange,
 			onAnnotationSizeChange,
+			pendingZoomCandidates = [],
+			onAcceptZoomCandidate,
+			onRejectZoomCandidate,
 		},
 		ref,
 	) => {
 		const videoRef = useRef<HTMLVideoElement | null>(null);
 		const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
+		const bgVideoRef = useRef<HTMLVideoElement | null>(null);
 		const containerRef = useRef<HTMLDivElement | null>(null);
 		const appRef = useRef<Application | null>(null);
 		const videoSpriteRef = useRef<Sprite | null>(null);
@@ -1047,6 +1056,28 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 			webcamVideo.currentTime = 0;
 		}, [webcamVideoPath]);
 
+		// ── Background screen video sync ──
+
+		useEffect(() => {
+			const bgVideo = bgVideoRef.current;
+			if (!bgVideo || wallpaper !== "screen") return;
+			if (Math.abs(bgVideo.currentTime - currentTime) > 0.1) {
+				bgVideo.currentTime = currentTime;
+			}
+		}, [currentTime, wallpaper]);
+
+		useEffect(() => {
+			const bgVideo = bgVideoRef.current;
+			if (!bgVideo || wallpaper !== "screen") return;
+			if (isPlaying) {
+				bgVideo.play().catch(() => {
+					// Ignore background video autoplay failures.
+				});
+			} else {
+				bgVideo.pause();
+			}
+		}, [isPlaying, wallpaper]);
+
 		useEffect(() => {
 			let mounted = true;
 			(async () => {
@@ -1136,14 +1167,30 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					),
 				}}
 			>
-				{/* Background layer - always render as DOM element with blur */}
-				<div
-					className="absolute inset-0 bg-cover bg-center"
-					style={{
-						...backgroundStyle,
-						filter: showBlur ? "blur(2px)" : "none",
-					}}
-				/>
+				{/* Background layer: screen-fill mode uses blurred video; otherwise use wallpaper */}
+				{wallpaper === "screen" ? (
+					<video
+						ref={bgVideoRef}
+						src={videoPath}
+						className="absolute inset-0 w-full h-full object-cover"
+						style={{
+							filter: "blur(12px) brightness(0.5)",
+							transform: "scale(1.1)",
+							transformOrigin: "center",
+						}}
+						muted
+						playsInline
+						preload="metadata"
+					/>
+				) : (
+					<div
+						className="absolute inset-0 bg-cover bg-center"
+						style={{
+							...backgroundStyle,
+							filter: showBlur ? "blur(2px)" : "none",
+						}}
+					/>
+				)}
 				<div
 					ref={containerRef}
 					className="absolute inset-0"
@@ -1184,7 +1231,11 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					<div
 						ref={overlayRef}
 						className="absolute inset-0 select-none"
-						style={{ pointerEvents: "none", zIndex: 30 }}
+						style={{
+							pointerEvents: "none",
+							zIndex: 30,
+							cursor: selectedZoomId && !isPlaying ? "crosshair" : "default",
+						}}
 						onPointerDown={handleOverlayPointerDown}
 						onPointerMove={handleOverlayPointerMove}
 						onPointerUp={handleOverlayPointerUp}
@@ -1192,9 +1243,90 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 					>
 						<div
 							ref={focusIndicatorRef}
-							className="absolute rounded-md border border-[#34B27B]/80 bg-[#34B27B]/20 shadow-[0_0_0_1px_rgba(52,178,123,0.35)]"
-							style={{ display: "none", pointerEvents: "none" }}
+							className="absolute rounded-md border-2 border-[#34B27B] bg-[#34B27B]/10 shadow-[0_0_0_2px_rgba(52,178,123,0.2),inset_0_0_0_1px_rgba(52,178,123,0.3)]"
+							style={{ display: "none", pointerEvents: "none", cursor: "crosshair" }}
 						/>
+						{/* Zoom candidate overlays for click-to-select */}
+						{pendingZoomCandidates.map((candidate) => {
+							const stageW = overlayRef.current?.clientWidth || stageSizeRef.current.width;
+							const stageH = overlayRef.current?.clientHeight || stageSizeRef.current.height;
+							if (!stageW || !stageH) return null;
+
+							const zoomScale = ZOOM_DEPTH_SCALES[DEFAULT_ZOOM_DEPTH];
+							const marginX = 1 / (2 * zoomScale);
+							const marginY = 1 / (2 * zoomScale);
+							const focusCx = Math.max(marginX, Math.min(1 - marginX, candidate.focus.cx));
+							const focusCy = Math.max(marginY, Math.min(1 - marginY, candidate.focus.cy));
+
+							const indicatorW = stageW / zoomScale;
+							const indicatorH = stageH / zoomScale;
+							const rawLeft = focusCx * stageW - indicatorW / 2;
+							const rawTop = focusCy * stageH - indicatorH / 2;
+							const left = Math.max(0, Math.min(stageW - indicatorW, rawLeft));
+							const top = Math.max(0, Math.min(stageH - indicatorH, rawTop));
+
+							const isActive =
+								currentTime * 1000 >= candidate.startMs && currentTime * 1000 <= candidate.endMs;
+
+							return (
+								<div
+									key={candidate.id}
+									className="absolute group"
+									style={{
+										left,
+										top,
+										width: indicatorW,
+										height: indicatorH,
+										pointerEvents: "auto",
+										cursor: "pointer",
+										zIndex: 35,
+									}}
+								>
+									{/* Background overlay */}
+									<div
+										className="absolute inset-0 rounded-md transition-all duration-200"
+										style={{
+											border: isActive
+												? "2px solid rgba(99,179,237,0.9)"
+												: "2px dashed rgba(99,179,237,0.6)",
+											background: isActive ? "rgba(99,179,237,0.15)" : "rgba(99,179,237,0.08)",
+										}}
+									/>
+									{/* Accept / Reject buttons */}
+									<div
+										className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+										style={{ zIndex: 36 }}
+									>
+										<button
+											type="button"
+											className="w-6 h-6 rounded-full bg-[#34B27B] text-white text-xs font-bold flex items-center justify-center shadow-md hover:bg-[#2a9668] transition-colors"
+											onClick={(e) => {
+												e.stopPropagation();
+												onAcceptZoomCandidate?.(candidate.id);
+											}}
+											title="Add zoom region"
+										>
+											✓
+										</button>
+										<button
+											type="button"
+											className="w-6 h-6 rounded-full bg-slate-700 text-white text-xs font-bold flex items-center justify-center shadow-md hover:bg-slate-600 transition-colors"
+											onClick={(e) => {
+												e.stopPropagation();
+												onRejectZoomCandidate?.(candidate.id);
+											}}
+											title="Dismiss suggestion"
+										>
+											✕
+										</button>
+									</div>
+									{/* Zoom label */}
+									<div className="absolute bottom-1.5 left-1.5 text-[9px] font-semibold text-blue-200 bg-blue-900/60 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+										Auto Zoom
+									</div>
+								</div>
+							);
+						})}
 						{(() => {
 							const filtered = (annotationRegions || []).filter((annotation) => {
 								if (typeof annotation.startMs !== "number" || typeof annotation.endMs !== "number")

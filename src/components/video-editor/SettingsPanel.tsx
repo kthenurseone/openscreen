@@ -6,6 +6,7 @@ import {
 	Film,
 	Image,
 	Lock,
+	Monitor,
 	Palette,
 	Sparkles,
 	Star,
@@ -750,8 +751,8 @@ export function SettingsPanel({
 							</div>
 						</AccordionTrigger>
 						<AccordionContent className="pb-3">
-							<Tabs defaultValue="image" className="w-full">
-								<TabsList className="mb-2 bg-white/5 border border-white/5 p-0.5 w-full grid grid-cols-3 h-7 rounded-lg">
+							<Tabs defaultValue={selected === "screen" ? "screen" : "image"} className="w-full">
+								<TabsList className="mb-2 bg-white/5 border border-white/5 p-0.5 w-full grid grid-cols-4 h-7 rounded-lg">
 									<TabsTrigger
 										value="image"
 										className="data-[state=active]:bg-[#34B27B] data-[state=active]:text-white text-slate-400 text-[10px] py-1 rounded-md transition-all"
@@ -769,6 +770,12 @@ export function SettingsPanel({
 										className="data-[state=active]:bg-[#34B27B] data-[state=active]:text-white text-slate-400 text-[10px] py-1 rounded-md transition-all"
 									>
 										{t("background.gradient")}
+									</TabsTrigger>
+									<TabsTrigger
+										value="screen"
+										className="data-[state=active]:bg-[#34B27B] data-[state=active]:text-white text-slate-400 text-[10px] py-1 rounded-md transition-all"
+									>
+										{t("background.screen")}
 									</TabsTrigger>
 								</TabsList>
 
@@ -896,6 +903,34 @@ export function SettingsPanel({
 													role="button"
 												/>
 											))}
+										</div>
+									</TabsContent>
+
+									<TabsContent value="screen" className="mt-0">
+										<div className="flex flex-col items-center gap-3 py-2">
+											<div
+												className={cn(
+													"flex flex-col items-center gap-2 w-full rounded-lg border-2 p-4 cursor-pointer transition-all",
+													selected === "screen"
+														? "border-[#34B27B] bg-[#34B27B]/10"
+														: "border-white/10 bg-white/5 hover:border-[#34B27B]/40",
+												)}
+												onClick={() => onWallpaperChange("screen")}
+												role="button"
+											>
+												<Monitor
+													className={cn(
+														"w-8 h-8",
+														selected === "screen" ? "text-[#34B27B]" : "text-slate-400",
+													)}
+												/>
+												<span className="text-xs font-medium text-slate-200">
+													{t("background.screen")}
+												</span>
+												<span className="text-[10px] text-slate-400 text-center">
+													{t("background.screenDescription")}
+												</span>
+											</div>
 										</div>
 									</TabsContent>
 								</div>
