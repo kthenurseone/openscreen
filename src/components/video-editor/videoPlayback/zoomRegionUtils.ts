@@ -2,7 +2,7 @@ import type { ZoomFocus, ZoomRegion } from "../types";
 import { ZOOM_DEPTH_SCALES } from "../types";
 import { TRANSITION_WINDOW_MS, ZOOM_IN_TRANSITION_WINDOW_MS } from "./constants";
 import { clampFocusToScale } from "./focusUtils";
-import { clamp01, cubicBezier, easeOutScreenStudio } from "./mathUtils";
+import { clamp01, cubicBezier, easeInScreenStudio, easeOutScreenStudio } from "./mathUtils";
 
 const CHAINED_ZOOM_PAN_GAP_MS = 1500;
 const CONNECTED_ZOOM_PAN_DURATION_MS = 1000;
@@ -46,7 +46,7 @@ export function computeRegionStrength(region: ZoomRegion, timeMs: number) {
 
 	if (timeMs < zoomInEnd) {
 		const progress = (timeMs - leadInStart) / ZOOM_IN_TRANSITION_WINDOW_MS;
-		return easeOutScreenStudio(progress);
+		return easeInScreenStudio(progress);
 	}
 
 	if (timeMs <= region.endMs) {
