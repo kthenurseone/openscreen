@@ -62,6 +62,14 @@ export function easeOutScreenStudio(t: number) {
 	return cubicBezier(0.16, 1, 0.3, 1, t);
 }
 
+/**
+ * Ease-in function for zoom-in transitions — starts slow, accelerates smoothly.
+ * Complementary to easeOutScreenStudio for smooth auto zoom animations.
+ */
+export function easeInScreenStudio(t: number) {
+	return cubicBezier(0.7, 0, 0.84, 0, t);
+}
+
 export function smoothStep(t: number) {
 	const clamped = clamp01(t);
 	return clamped * clamped * (3 - 2 * clamped);
