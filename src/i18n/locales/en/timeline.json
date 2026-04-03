@@ -20,7 +20,8 @@
 		"speedItem": "Speed {{index}}",
 		"annotationItem": "Annotation",
 		"imageItem": "Image",
-		"emptyText": "Empty text"
+		"emptyText": "Empty text",
+		"autoZoom": "Auto Zoom"
 	},
 	"emptyState": {
 		"noVideo": "No Video Loaded",

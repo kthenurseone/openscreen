@@ -18,6 +18,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { useScopedT } from "@/contexts/I18nContext";
 import { getAssetPath } from "@/lib/assetPath";
 import {
 	getWebcamLayoutCssBoxShadow,
@@ -152,6 +153,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 		},
 		ref,
 	) => {
+		const t = useScopedT("timeline");
 		const videoRef = useRef<HTMLVideoElement | null>(null);
 		const webcamVideoRef = useRef<HTMLVideoElement | null>(null);
 		const bgVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -1322,7 +1324,7 @@ const VideoPlayback = forwardRef<VideoPlaybackRef, VideoPlaybackProps>(
 									</div>
 									{/* Zoom label */}
 									<div className="absolute bottom-1.5 left-1.5 text-[9px] font-semibold text-blue-200 bg-blue-900/60 px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-										Auto Zoom
+										{t("labels.autoZoom")}
 									</div>
 								</div>
 							);
