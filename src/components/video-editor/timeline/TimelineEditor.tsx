@@ -57,6 +57,9 @@ interface TimelineEditorProps {
 	zoomRegions: ZoomRegion[];
 	onZoomAdded: (span: Span) => void;
 	onZoomSuggested?: (span: Span, focus: ZoomFocus) => void;
+	onZoomCandidates?: (
+		candidates: Array<{ id: string; startMs: number; endMs: number; focus: ZoomFocus }>,
+	) => void;
 	onZoomSpanChange: (id: string, span: Span) => void;
 	onZoomDelete: (id: string) => void;
 	selectedZoomId: string | null;
@@ -739,6 +742,7 @@ export default function TimelineEditor({
 	zoomRegions,
 	onZoomAdded,
 	onZoomSuggested,
+	onZoomCandidates,
 	onZoomSpanChange,
 	onZoomDelete,
 	selectedZoomId,
@@ -984,7 +988,8 @@ export default function TimelineEditor({
 			return;
 		}
 
-		if (!onZoomSuggested) {
+		// Require at least one zoom suggestion callback
+		if (!onZoomCandidates && !onZoomSuggested) {
 			toast.error(t("errors.zoomSuggestionUnavailable"));
 			return;
 		}
@@ -1026,7 +1031,8 @@ export default function TimelineEditor({
 		const sortedCandidates = [...dwellCandidates].sort((a, b) => b.strength - a.strength);
 		const acceptedCenters: number[] = [];
 
-		let addedCount = 0;
+		const finalCandidates: Array<{ id: string; startMs: number; endMs: number; focus: ZoomFocus }> =
+			[];
 
 		sortedCandidates.forEach((candidate) => {
 			const tooCloseToAccepted = acceptedCenters.some(
@@ -1050,28 +1056,47 @@ export default function TimelineEditor({
 
 			reservedSpans.push({ start: candidateStart, end: candidateEnd });
 			acceptedCenters.push(candidate.centerTimeMs);
-			onZoomSuggested({ start: candidateStart, end: candidateEnd }, candidate.focus);
-			addedCount += 1;
+			finalCandidates.push({
+				id: uuidv4(),
+				startMs: candidateStart,
+				endMs: candidateEnd,
+				focus: candidate.focus,
+			});
 		});
 
-		if (addedCount === 0) {
+		if (finalCandidates.length === 0) {
 			toast.info(t("errors.noAutoZoomSlots"), {
 				description: t("errors.noAutoZoomSlotsDescription"),
 			});
 			return;
 		}
 
-		toast.success(
-			addedCount === 1
-				? t("success.addedZoomSuggestions", { count: String(addedCount) })
-				: t("success.addedZoomSuggestionsPlural", { count: String(addedCount) }),
-		);
+		// Prefer interactive candidate selection if callback provided; else auto-add
+		if (onZoomCandidates) {
+			onZoomCandidates(finalCandidates);
+			toast.info(
+				finalCandidates.length === 1
+					? t("success.addedZoomSuggestions", { count: String(finalCandidates.length) })
+					: t("success.addedZoomSuggestionsPlural", { count: String(finalCandidates.length) }),
+				{ description: t("errors.zoomCandidatesDescription") },
+			);
+		} else if (onZoomSuggested) {
+			for (const c of finalCandidates) {
+				onZoomSuggested({ start: c.startMs, end: c.endMs }, c.focus);
+			}
+			toast.success(
+				finalCandidates.length === 1
+					? t("success.addedZoomSuggestions", { count: String(finalCandidates.length) })
+					: t("success.addedZoomSuggestionsPlural", { count: String(finalCandidates.length) }),
+			);
+		}
 	}, [
 		videoDuration,
 		totalMs,
 		defaultRegionDurationMs,
 		zoomRegions,
 		onZoomSuggested,
+		onZoomCandidates,
 		cursorTelemetry,
 		t,
 	]);

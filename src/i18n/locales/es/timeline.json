@@ -20,7 +20,8 @@
 		"speedItem": "Velocidad {{index}}",
 		"annotationItem": "Anotación",
 		"imageItem": "Imagen",
-		"emptyText": "Texto vacío"
+		"emptyText": "Texto vacío",
+		"autoZoom": "Zoom automático"
 	},
 	"emptyState": {
 		"noVideo": "No hay video cargado",
@@ -38,6 +39,7 @@
 		"noDwellMomentsDescription": "Intenta una grabación con pausas más lentas del cursor en acciones importantes.",
 		"noAutoZoomSlots": "No hay espacios de auto-zoom disponibles",
 		"noAutoZoomSlotsDescription": "Los puntos de pausa detectados se superponen con regiones de zoom existentes.",
+		"zoomCandidatesDescription": "Haz clic en ✓ en cada área resaltada de la vista previa para agregar regiones de zoom.",
 		"cannotPlaceTrim": "No se puede colocar el recorte aquí",
 		"trimExistsAtLocation": "Ya existe un recorte en esta ubicación o no hay suficiente espacio disponible.",
 		"cannotPlaceSpeed": "No se puede colocar la velocidad aquí",

@@ -33,6 +33,8 @@
 		"image": "Imagen",
 		"color": "Color",
 		"gradient": "Degradado",
+		"screen": "Pantalla",
+		"screenDescription": "Usa tu pantalla grabada como fondo",
 		"uploadCustom": "Subir personalizado",
 		"gradientLabel": "Degradado {{index}}"
 	},

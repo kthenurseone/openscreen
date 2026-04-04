@@ -54,6 +54,7 @@ import {
 	type PlaybackSpeed,
 	type SpeedRegion,
 	type TrimRegion,
+	type ZoomCandidate,
 	type ZoomDepth,
 	type ZoomFocus,
 	type ZoomRegion,
@@ -120,6 +121,7 @@ export default function VideoEditor() {
 		format: string;
 	} | null>(null);
 	const [isFullscreen, setIsFullscreen] = useState(false);
+	const [pendingZoomCandidates, setPendingZoomCandidates] = useState<ZoomCandidate[]>([]);
 
 	const playerContainerRef = useRef<HTMLDivElement>(null);
 	const videoPlaybackRef = useRef<VideoPlaybackRef>(null);
@@ -619,6 +621,42 @@ export default function VideoEditor() {
 		},
 		[pushState],
 	);
+
+	// ── Zoom candidate selection (interactive auto-zoom flow) ──
+
+	const handleZoomCandidates = useCallback(
+		(candidates: Array<{ id: string; startMs: number; endMs: number; focus: ZoomFocus }>) => {
+			setPendingZoomCandidates(candidates);
+		},
+		[],
+	);
+
+	const handleAcceptZoomCandidate = useCallback(
+		(candidateId: string) => {
+			const candidate = pendingZoomCandidates.find((c) => c.id === candidateId);
+			if (!candidate) return;
+
+			const id = `zoom-${nextZoomIdRef.current++}`;
+			const newRegion: ZoomRegion = {
+				id,
+				startMs: candidate.startMs,
+				endMs: candidate.endMs,
+				depth: DEFAULT_ZOOM_DEPTH,
+				focus: clampFocusToDepth(candidate.focus, DEFAULT_ZOOM_DEPTH),
+			};
+			pushState((prev) => ({ zoomRegions: [...prev.zoomRegions, newRegion] }));
+			setSelectedZoomId(id);
+			setSelectedTrimId(null);
+			setSelectedAnnotationId(null);
+			// Remove the accepted candidate from the pending list
+			setPendingZoomCandidates((prev) => prev.filter((c) => c.id !== candidateId));
+		},
+		[pendingZoomCandidates, pushState],
+	);
+
+	const handleRejectZoomCandidate = useCallback((candidateId: string) => {
+		setPendingZoomCandidates((prev) => prev.filter((c) => c.id !== candidateId));
+	}, []);
 
 	const handleTrimAdded = useCallback(
 		(span: Span) => {
@@ -1502,6 +1540,9 @@ export default function VideoEditor() {
 											onSelectAnnotation={handleSelectAnnotation}
 											onAnnotationPositionChange={handleAnnotationPositionChange}
 											onAnnotationSizeChange={handleAnnotationSizeChange}
+											pendingZoomCandidates={pendingZoomCandidates}
+											onAcceptZoomCandidate={handleAcceptZoomCandidate}
+											onRejectZoomCandidate={handleRejectZoomCandidate}
 										/>
 									</div>
 								</div>
@@ -1537,6 +1578,7 @@ export default function VideoEditor() {
 									zoomRegions={zoomRegions}
 									onZoomAdded={handleZoomAdded}
 									onZoomSuggested={handleZoomSuggested}
+									onZoomCandidates={handleZoomCandidates}
 									onZoomSpanChange={handleZoomSpanChange}
 									onZoomDelete={handleZoomDelete}
 									selectedZoomId={selectedZoomId}

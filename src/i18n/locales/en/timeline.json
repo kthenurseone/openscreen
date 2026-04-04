@@ -20,7 +20,8 @@
 		"speedItem": "Speed {{index}}",
 		"annotationItem": "Annotation",
 		"imageItem": "Image",
-		"emptyText": "Empty text"
+		"emptyText": "Empty text",
+		"autoZoom": "Auto Zoom"
 	},
 	"emptyState": {
 		"noVideo": "No Video Loaded",
@@ -38,6 +39,7 @@
 		"noDwellMomentsDescription": "Try a recording with slower cursor pauses on important actions.",
 		"noAutoZoomSlots": "No auto-zoom slots available",
 		"noAutoZoomSlotsDescription": "Detected dwell points overlap existing zoom regions.",
+		"zoomCandidatesDescription": "Click ✓ on each highlighted area in the preview to add zoom regions.",
 		"cannotPlaceTrim": "Cannot place trim here",
 		"trimExistsAtLocation": "Trim already exists at this location or not enough space available.",
 		"cannotPlaceSpeed": "Cannot place speed here",

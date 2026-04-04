@@ -33,6 +33,8 @@
 		"image": "图片",
 		"color": "颜色",
 		"gradient": "渐变",
+		"screen": "屏幕",
+		"screenDescription": "使用录制的屏幕作为背景",
 		"uploadCustom": "上传自定义",
 		"gradientLabel": "渐变 {{index}}"
 	},
